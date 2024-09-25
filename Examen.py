@@ -7,9 +7,9 @@ from PyQt6.QtGui import QIcon, QPixmap, QPainter, QBrush
 class MonitorApp(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Monitor")
+        self.setWindowTitle("Examen Unidad 1")
         self.setGeometry(100, 100, 600, 400)
-        self.setWindowIcon(QIcon('icon.png'))
+        self.setWindowIcon(QIcon('C:/Users/showd/OneDrive/Escritorio/Clases 2024/Equipo Alfa Maravilla Escuadron Lobo/alert_icon.png'))
         self.initUI()
 
     def initUI(self):
@@ -144,4 +144,3 @@ if __name__ == '__main__':
     window = MonitorApp()
     window.show()
     sys.exit(app.exec())
-
