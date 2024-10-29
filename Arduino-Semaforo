@@ -1,0 +1,81 @@
+#include <WiFi.h>
+
+// Configuración de la red Wi-Fi
+const char* ssid = "POCO M5s";
+const char* password = "211080295";
+
+// Configuración del servidor
+WiFiServer server(80);
+
+// Pines de los LEDs
+const int ledRojo = 2;
+const int ledAmarillo = 4;
+const int ledVerde = 5;
+
+void setup() {
+  Serial.begin(115200);
+
+  // Configurar pines de salida para LEDs
+  pinMode(ledRojo, OUTPUT);
+  pinMode(ledAmarillo, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+
+  // Conectar al Wi-Fi
+  conectarWiFi();
+
+  // Iniciar el servidor
+  server.begin();
+}
+
+void loop() {
+  // Verificar si hay un cliente conectado
+  WiFiClient client = server.available();
+  if (client) {
+    Serial.println("Cliente conectado");
+    
+    // Manejar la simulación del semáforo
+    while (client.connected()) {
+      // Encender LED Rojo
+      digitalWrite(ledRojo, HIGH);
+      client.print("LED,ROJO,ON\n");
+      delay(3000); // Esperar 3 segundos
+      digitalWrite(ledRojo, LOW);
+      client.print("LED,ROJO,OFF\n");
+
+      // Encender LED Amarillo
+      unsigned long startTime = millis(); // Guarda el tiempo de inicio
+while (millis() - startTime < 4000) { // Bucle de 4 segundos
+    digitalWrite(ledAmarillo, HIGH);
+    client.print("LED,AMARILLO,ON\n");
+    delay(500); // LED encendido por 500 ms
+    digitalWrite(ledAmarillo, LOW);
+    client.print("LED,AMARILLO,OFF\n");
+    delay(500); // LED apagado por 500 ms
+}
+
+      // Encender LED Verde
+      digitalWrite(ledVerde, HIGH);
+      client.print("LED,VERDE,ON\n");
+      delay(6000); // Esperar 3 segundos
+      digitalWrite(ledVerde, LOW);
+      client.print("LED,VERDE,OFF\n");
+    }
+    client.stop();
+    Serial.println("Cliente desconectado");
+  }
+}
+
+void conectarWiFi() {
+  Serial.print("Conectando a ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConectado a Wi-Fi");
+  Serial.print("Dirección IP: ");
+  Serial.println(WiFi.localIP());
+}
