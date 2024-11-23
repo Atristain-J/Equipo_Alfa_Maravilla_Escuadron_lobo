@@ -1,0 +1,314 @@
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton,
+    QLineEdit, QMessageBox, QFileDialog, QScrollArea, QHBoxLayout, QInputDialog
+)
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtCore import Qt
+import os
+
+ARCHIVO_USUARIOS = "PROYECTO.txt"
+ARCHIVO_PLANTAS = "plantas.txt"
+usuarios = {}
+plantas = []
+
+
+# Funciones para cargar datos
+def cargar_usuarios():
+    try:
+        with open(ARCHIVO_USUARIOS, "r") as archivo:
+            for linea in archivo:
+                usuario, contrasena = linea.strip().split(":")
+                usuarios[usuario] = contrasena
+    except FileNotFoundError:
+        pass
+
+
+def cargar_plantas():
+    try:
+        with open(ARCHIVO_PLANTAS, "r") as archivo:
+            for linea in archivo:
+                nombre, temperatura, ph, humedad, ruta_imagen = linea.strip().split(",")
+                if os.path.isfile(ruta_imagen):
+                    plantas.append({
+                        "nombre": nombre,
+                        "temperatura": temperatura,
+                        "ph": ph,
+                        "humedad": humedad,
+                        "ruta_imagen": ruta_imagen
+                    })
+    except FileNotFoundError:
+        pass
+
+
+def guardar_usuario(usuario, contrasena):
+    usuarios[usuario] = contrasena
+    with open(ARCHIVO_USUARIOS, "a") as archivo:
+        archivo.write(f"{usuario}:{contrasena}\n")
+
+
+def guardar_planta(planta):
+    plantas.append(planta)
+    with open(ARCHIVO_PLANTAS, "a") as archivo:
+        archivo.write(
+            f"{planta['nombre']},{planta['temperatura']},{planta['ph']},{planta['humedad']},{planta['ruta_imagen']}\n"
+        )
+
+
+# Función para eliminar planta
+def eliminar_planta(planta):
+    plantas.remove(planta)
+    with open(ARCHIVO_PLANTAS, "w") as archivo:
+        for p in plantas:
+            archivo.write(
+                f"{p['nombre']},{p['temperatura']},{p['ph']},{p['humedad']},{p['ruta_imagen']}\n"
+            )
+
+
+# Clases para las ventanas
+class VentanaPrincipal(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Gestión de Plantas")
+        self.setGeometry(100, 100, 600, 400)
+        self.init_ui()
+
+    def init_ui(self):
+        # Pantalla principal
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        layout = QVBoxLayout()
+        self.central_widget.setLayout(layout)
+
+        # Botón de inicio de sesión
+        self.btn_login = QPushButton("Iniciar Sesión")
+        self.btn_login.clicked.connect(self.mostrar_login)
+        layout.addWidget(self.btn_login)
+
+        # Botón de registrar usuario
+        self.btn_registro = QPushButton("Registrar Nuevo Usuario")
+        self.btn_registro.clicked.connect(self.mostrar_registro)
+        layout.addWidget(self.btn_registro)
+
+        # Cargar datos
+        cargar_usuarios()
+        cargar_plantas()
+
+    def mostrar_login(self):
+        self.hide()
+        self.ventana_login = VentanaLogin(self)
+        self.ventana_login.show()
+
+    def mostrar_registro(self):
+        self.hide()
+        self.ventana_registro = VentanaRegistro(self)
+        self.ventana_registro.show()
+
+    def mostrar_bienvenida(self):
+        self.hide()
+        self.ventana_bienvenida = VentanaBienvenida(self)
+        self.ventana_bienvenida.show()
+
+
+class VentanaLogin(QWidget):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.setWindowTitle("Inicio de Sesión")
+        self.setGeometry(100, 100, 300, 200)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        # Campos de texto
+        self.label_usuario = QLabel("Usuario:")
+        layout.addWidget(self.label_usuario)
+        self.input_usuario = QLineEdit()
+        layout.addWidget(self.input_usuario)
+
+        self.label_contrasena = QLabel("Contraseña:")
+        layout.addWidget(self.label_contrasena)
+        self.input_contrasena = QLineEdit()
+        self.input_contrasena.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addWidget(self.input_contrasena)
+
+        # Botones
+        self.btn_iniciar_sesion = QPushButton("Iniciar Sesión")
+        self.btn_iniciar_sesion.clicked.connect(self.iniciar_sesion)
+        layout.addWidget(self.btn_iniciar_sesion)
+
+        self.btn_regresar = QPushButton("Regresar")
+        self.btn_regresar.clicked.connect(self.regresar)
+        layout.addWidget(self.btn_regresar)
+
+    def iniciar_sesion(self):
+        usuario = self.input_usuario.text()
+        contrasena = self.input_contrasena.text()
+
+        if usuario in usuarios and usuarios[usuario] == contrasena:
+            QMessageBox.information(self, "Éxito", "Inicio de sesión exitoso.")
+            self.parent.mostrar_bienvenida()
+        else:
+            QMessageBox.warning(self, "Error", "Usuario o contraseña incorrectos.")
+
+    def regresar(self):
+        self.parent.show()
+        self.close()
+
+
+class VentanaRegistro(QWidget):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.setWindowTitle("Registro de Usuario")
+        self.setGeometry(100, 100, 300, 200)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        # Campos de texto
+        self.label_usuario = QLabel("Usuario:")
+        layout.addWidget(self.label_usuario)
+        self.input_usuario = QLineEdit()
+        layout.addWidget(self.input_usuario)
+
+        self.label_contrasena = QLabel("Contraseña:")
+        layout.addWidget(self.label_contrasena)
+        self.input_contrasena = QLineEdit()
+        self.input_contrasena.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addWidget(self.input_contrasena)
+
+        # Botones
+        self.btn_registrar = QPushButton("Registrar")
+        self.btn_registrar.clicked.connect(self.registrar_usuario)
+        layout.addWidget(self.btn_registrar)
+
+        self.btn_regresar = QPushButton("Regresar")
+        self.btn_regresar.clicked.connect(self.regresar)
+        layout.addWidget(self.btn_regresar)
+
+    def registrar_usuario(self):
+        usuario = self.input_usuario.text()
+        contrasena = self.input_contrasena.text()
+
+        if usuario and contrasena:
+            guardar_usuario(usuario, contrasena)
+            QMessageBox.information(self, "Éxito", "Usuario registrado exitosamente.")
+            self.regresar()
+        else:
+            QMessageBox.warning(self, "Error", "Por favor, completa todos los campos.")
+
+    def regresar(self):
+        self.parent.show()
+        self.close()
+
+
+class VentanaBienvenida(QWidget):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.setWindowTitle("Plantas Registradas")
+        self.setGeometry(100, 100, 600, 400)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        # Área de scroll
+        scroll_area = QScrollArea()
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout()
+        scroll_content.setLayout(scroll_layout)
+
+        scroll_area.setWidget(scroll_content)
+        scroll_area.setWidgetResizable(True)
+        layout.addWidget(scroll_area)
+
+        # Listar plantas
+        self.scroll_layout = scroll_layout
+        self.listar_plantas()
+
+        # Botón para agregar plantas
+        self.btn_agregar_planta = QPushButton("Agregar Planta")
+        self.btn_agregar_planta.clicked.connect(self.mostrar_agregar_planta)
+        layout.addWidget(self.btn_agregar_planta)
+
+        # Botón para eliminar planta
+        self.btn_eliminar_planta = QPushButton("Eliminar Planta")
+        self.btn_eliminar_planta.clicked.connect(self.mostrar_eliminar_planta)
+        layout.addWidget(self.btn_eliminar_planta)
+
+        # Botón de regresar
+        self.btn_regresar = QPushButton("Regresar")
+        self.btn_regresar.clicked.connect(self.regresar)
+        layout.addWidget(self.btn_regresar)
+
+    def listar_plantas(self):
+        for i in reversed(range(self.scroll_layout.count())):
+            self.scroll_layout.itemAt(i).widget().deleteLater()
+
+        for planta in plantas:
+            planta_widget = QWidget()
+            planta_layout = QHBoxLayout()
+            planta_widget.setLayout(planta_layout)
+
+            label_nombre = QLabel(planta["nombre"])
+            planta_layout.addWidget(label_nombre)
+
+            # Cargar y mostrar la imagen de la planta
+            if os.path.exists(planta["ruta_imagen"]):
+                pixmap = QPixmap(planta["ruta_imagen"]).scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio)
+                label_imagen = QLabel()
+                label_imagen.setPixmap(pixmap)
+                planta_layout.addWidget(label_imagen)
+
+            btn_detalles = QPushButton("Ver Detalles")
+            btn_detalles.clicked.connect(lambda checked, p=planta: self.mostrar_detalles(p))
+            planta_layout.addWidget(btn_detalles)
+
+            self.scroll_layout.addWidget(planta_widget)
+
+    def mostrar_detalles(self, planta):
+        QMessageBox.information(self, planta["nombre"], f"Temperatura: {planta['temperatura']}°C\n"
+                                                       f"pH: {planta['ph']}\n"
+                                                       f"Humedad: {planta['humedad']}%")
+
+    def mostrar_agregar_planta(self):
+        # Lógica para agregar planta
+        ruta_imagen, _ = QFileDialog.getOpenFileName(self, "Selecciona la imagen", "", "Imagenes (*.png *.jpg *.bmp)")
+        if ruta_imagen:
+            nombre, ok = QInputDialog.getText(self, "Nombre de la Planta", "Introduce el nombre de la planta:")
+            if ok and nombre:
+                planta = {
+                    "nombre": nombre,
+                    "temperatura": "25",  # Establecer un valor predeterminado o permitir al usuario ingresarlo
+                    "ph": "7",            # Lo mismo para el pH y la humedad
+                    "humedad": "50",
+                    "ruta_imagen": ruta_imagen
+                }
+                guardar_planta(planta)
+                self.listar_plantas()
+
+    def mostrar_eliminar_planta(self):
+        # Lógica para eliminar planta
+        nombre, ok = QInputDialog.getText(self, "Eliminar Planta", "Introduce el nombre de la planta a eliminar:")
+        if ok and nombre:
+            planta_a_eliminar = None
+            for planta in plantas:
+                if planta["nombre"] == nombre:
+                    planta_a_eliminar = planta
+                    break
+            if planta_a_eliminar:
+                eliminar_planta(planta_a_eliminar)
+                self.listar_plantas()
+                QMessageBox.information(self, "Éxito", f"Planta {nombre} eliminada.")
+            else:
+                QMessageBox.warning(self, "Error", "Planta no encontrada.")
+
+    def regresar(self):
+        self.parent.show()
+        self.close()
+
+
+if __name__ == "__main__":
+    app = QApplication([])
+    ventana = VentanaPrincipal()
+    ventana.show()
+    app.exec()
